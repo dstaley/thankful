@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset=utf-8 />
+  <meta http-equiv="Content-Language" content="en" />
+  <title>What are you thankful for?</title>
+  <script src="http://code.jquery.com/jquery-2.0.2.js"></script>
+  <script src="http://builds.emberjs.com/handlebars-1.0.0.js"></script>
+  <script src="https://cdn.firebase.com/v0/firebase.js"></script>
+  <script src="http://builds.emberjs.com/ember-latest.js"></script>
+  <script src="http://firebase.github.io/emberFire/emberfire-latest.js"></script>
+
+  <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #e5e5e5;
+    }
+
+    .messages {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .message {
+      padding: 50px 25px;
+      background-color: white;
+      margin-bottom: 12px;
+      border-radius: 2px;
+      box-shadow: 0px 1px 1px rgba(50, 50, 50, 0.25);
+    }
+
+    .text {
+      font-size: 32px;
+      font-family: Georgia,serif;
+    }
+
+    .permalink {
+      font-size: 11px;
+      color: gray;
+      text-align: right;
+      float: right;
+    }
+
+    .location {
+      float: left;
+      font-size: 11px;
+      color: gray;
+    }
+
+    @media (max-width: 480px) {
+      .text {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script type="text/x-handlebars" data-template-name="application">
+    <div class="container">
+      <header>
+        <h1>What are you thankful for?</h1>
+        <p class="lead">Send a text to (225) 686 5846 and share your thankfulness with the world in real-time.</p>
+      </header>
+      {{outlet}}
+    </div>
+  </script>
+  <script type="text/x-handlebars" data-template-name="index">
+  {{#scrolling-list id="messagesDiv" update-when=this}}
+    <ul class="messages">
+      {{#each update-when=this}}
+      <li class="message">
+        <p class="text">{{body}}</p>
+        <p class="location">{{from.city}}, {{from.state}}</p>
+        {{#link-to "message" this classNames="permalink"}}<i class="fa fa-link"></i>{{/link-to}}
+      </li>
+      {{/each}}
+    </ul>
+  {{/scrolling-list}}
+  </script>
+  <script type="text/x-handlebars" data-template-name="message">
+    <div class="message">
+      <p class="text">{{body}}</p>
+      <p class="location">{{from.city}}, {{from.state}}</p>
+      {{#link-to "message" this classNames="permalink"}}<i class="fa fa-link"></i>{{/link-to}}
+    </div>
+  </script>
+  <script type="text/x-handlebars" id="components/scrolling-list">
+    {{yield}}
+  </script>
+<script>
+  App = Ember.Application.create({});
+
+  App.Router.map(function() {
+    this.route("message", {path: "/:id"});
+  });
+
+  App.IndexRoute = Ember.Route.extend({
+    model: function(){
+      return EmberFire.Array.create({
+        ref: new Firebase("https://thankfulfor.firebaseio.com/messages")
+      });
+    }
+  });
+
+  App.IndexController = Ember.ArrayController.extend({
+    sortProperties: ['id'],
+    sortAscending: false
+  });
+
+  App.ApplicationController = Ember.Controller.extend({
+    documentHeight: 0
+  });
+
+  App.MessageRoute = Ember.Route.extend({
+    model: function(params, transition){
+      return EmberFire.Object.create({
+        ref: new Firebase("https://thankfulfor.firebaseio.com/messages/%@".fmt(params.id))
+      });
+    }
+  });
+
+  App.ScrollingListComponent = Ember.Component.extend({
+    scheduleScrollIntoView: function() {
+      Ember.run.scheduleOnce("afterRender", this, "scrollIntoView");
+    }.observes("update-when.@each"),
+
+    scrollIntoView: function() {
+      var current_scroll_position = $(document).scrollTop();
+      var height_added = $(document).height() - this.get('documentHeight');
+      if (current_scroll_position > 0 && this.get('documentHeight') > 0 && $(document).height() != this.get('documentHeight')) {
+        $(document).scrollTop(current_scroll_position + height_added);
+        this.set('documentHeight', $(document).height());
+      } else {
+        this.set('documentHeight', $(document).height());
+      };
+    },
+    documentHeight: 0
+  });
+</script>
+</body>
+</html>
+  
